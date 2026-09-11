@@ -11,14 +11,16 @@ export default function App() {
   const [locations, setLocations] = useState([]);
   const [notices, setNotices] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+// ✅ Dynamic API URL (Fallback to live backend directly)
+  const API_BASE =
+    import.meta.env.VITE_API_URL || "https://campus-bot-backend.onrender.com";
   const fetchDbRecords = async () => {
     try {
-      const locRes = await fetch("http://localhost:5000/api/locations");
+      const locRes = await fetch(`${API_BASE}/api/locations`);
       const locData = await locRes.json();
       setLocations(Array.isArray(locData) ? locData : []);
 
-      const notRes = await fetch("http://localhost:5000/api/notices");
+      const notRes = await fetch(`${API_BASE}/api/notices`);
       const notData = await notRes.json();
       setNotices(Array.isArray(notData) ? notData : []);
     } catch (e) {
