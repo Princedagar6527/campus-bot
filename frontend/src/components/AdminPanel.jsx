@@ -1,11 +1,14 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Database, Bell, MapPin } from "lucide-react";
+import { Plus, Trash2, Database, Bell, MapPin, Loader2 } from "lucide-react";
 
 export default function AdminPanel({ locations = [], notices = [], onRefresh }) {
   const [adminTab, setAdminTab] = useState("notices");
+  const [loadingAction, setLoadingAction] = useState(false);
 
-  // Dynamic API Base URL for local dev and live Vercel deployment
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  // Dynamic API Base URL (Sanitized without trailing slash)
+  const rawBase =
+    import.meta.env.VITE_API_URL || "https://campus-bot-backend.onrender.com";
+  const API_BASE = rawBase.endsWith("/") ? rawBase.slice(0, -1) : rawBase;
 
   const [newLoc, setNewLoc] = useState({
     name: "",
@@ -24,14 +27,17 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
     description: "",
   });
 
+  // 1. Create Location Handler
   const handleCreateLocation = async (e) => {
     e.preventDefault();
+    setLoadingAction(true);
     try {
       const res = await fetch(`${API_BASE}/api/locations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newLoc),
       });
+
       if (res.ok) {
         setNewLoc({
           name: "",
@@ -44,20 +50,25 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
           y: 100,
         });
         if (onRefresh) onRefresh();
+        alert("Location added successfully!");
       } else {
-        const data = await res.json();
-        alert(`Location creation failed: ${data.error || res.statusText}`);
+        const data = await res.json().catch(() => ({}));
+        alert(`Location creation failed (${res.status}): ${data.error || res.statusText}`);
       }
     } catch (err) {
       console.error("Error creating location:", err);
-      alert("Failed to connect to backend server.");
+      alert(`Backend connection failed to ${API_BASE}. Render server waking up or check internet.`);
+    } finally {
+      setLoadingAction(false);
     }
   };
 
+  // 2. Delete Location Handler
   const handleDeleteLoc = async (id) => {
     if (!id) return;
     if (!window.confirm("Are you sure you want to delete this location?")) return;
 
+    setLoadingAction(true);
     try {
       const res = await fetch(`${API_BASE}/api/locations/${id}`, {
         method: "DELETE",
@@ -68,16 +79,20 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
         if (onRefresh) onRefresh();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(`Deletion rejected: ${data.error || res.statusText}`);
+        alert(`Deletion failed (${res.status}): ${data.error || res.statusText}`);
       }
     } catch (err) {
       console.error("Delete network error:", err);
-      alert("Backend connection failed.");
+      alert(`Backend connection failed to ${API_BASE}.`);
+    } finally {
+      setLoadingAction(false);
     }
   };
 
+  // 3. Create Notice Handler
   const handleCreateNotice = async (e) => {
     e.preventDefault();
+    setLoadingAction(true);
     try {
       const res = await fetch(`${API_BASE}/api/notices`, {
         method: "POST",
@@ -92,20 +107,25 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
           description: "",
         });
         if (onRefresh) onRefresh();
+        alert("Notice published successfully!");
       } else {
-        const data = await res.json();
-        alert(`Notice publication failed: ${data.error || res.statusText}`);
+        const data = await res.json().catch(() => ({}));
+        alert(`Notice publication failed (${res.status}): ${data.error || res.statusText}`);
       }
     } catch (err) {
       console.error("Error publishing notice:", err);
-      alert("Failed to connect to backend server.");
+      alert(`Backend connection failed to ${API_BASE}. Wait 30s if backend is waking up.`);
+    } finally {
+      setLoadingAction(false);
     }
   };
 
+  // 4. Delete Notice Handler
   const handleDeleteNotice = async (id) => {
     if (!id) return;
     if (!window.confirm("Are you sure you want to delete this notice?")) return;
 
+    setLoadingAction(true);
     try {
       const res = await fetch(`${API_BASE}/api/notices/${id}`, {
         method: "DELETE",
@@ -116,11 +136,13 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
         if (onRefresh) onRefresh();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(`Deletion rejected: ${data.error || res.statusText}`);
+        alert(`Deletion failed (${res.status}): ${data.error || res.statusText}`);
       }
     } catch (err) {
       console.error("Delete network error:", err);
-      alert("Backend connection failed.");
+      alert(`Backend connection failed to ${API_BASE}.`);
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -133,7 +155,7 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
             <Database className="w-4 h-4 text-emerald-400" /> Database Admin Console
           </h2>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-            Admin mutations directly update MongoDB records and refresh the RAG context.
+            Target Endpoint: <span className="font-mono text-emerald-400">{API_BASE}</span>
           </p>
         </div>
 
@@ -197,9 +219,18 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
             />
             <button
               type="submit"
-              className="sm:col-span-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+              disabled={loadingAction}
+              className="sm:col-span-3 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
             >
-              <Plus className="w-4 h-4" /> Publish Notice to Database
+              {loadingAction ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Publishing...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" /> Publish Notice to Database
+                </>
+              )}
             </button>
           </form>
 
@@ -234,7 +265,8 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
                         <td className="p-3 text-right">
                           <button
                             onClick={() => handleDeleteNotice(n._id)}
-                            className="text-rose-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+                            disabled={loadingAction}
+                            className="text-rose-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors disabled:opacity-50"
                             title="Delete Notice"
                           >
                             <Trash2 className="w-4 h-4 inline" />
@@ -305,9 +337,18 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
             />
             <button
               type="submit"
-              className="sm:col-span-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+              disabled={loadingAction}
+              className="sm:col-span-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
             >
-              <Plus className="w-4 h-4" /> Insert Facility Record
+              {loadingAction ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" /> Insert Facility Record
+                </>
+              )}
             </button>
           </form>
 
@@ -338,7 +379,8 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
                         <td className="p-3 text-right">
                           <button
                             onClick={() => handleDeleteLoc(l._id)}
-                            className="text-rose-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+                            disabled={loadingAction}
+                            className="text-rose-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors disabled:opacity-50"
                             title="Delete Location"
                           >
                             <Trash2 className="w-4 h-4 inline" />

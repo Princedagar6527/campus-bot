@@ -34,7 +34,7 @@ export default function App() {
 
   const handleSeed = async () => {
     try {
-      await fetch("http://localhost:5000/api/seed", { method: "POST" });
+      await fetch(`${API_BASE}/api/seed`, { method: "POST" });
       fetchDbRecords();
     } catch (e) {
       console.error("Database seeding failure:", e);
