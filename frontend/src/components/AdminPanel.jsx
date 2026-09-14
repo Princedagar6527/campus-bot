@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Plus, Trash2, Database, Bell, MapPin, Loader2 } from "lucide-react";
 
@@ -27,7 +28,7 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
     description: "",
   });
 
-  // 1. Create Location Handler
+  // 1. Handle Create Location
   const handleCreateLocation = async (e) => {
     e.preventDefault();
     setLoadingAction(true);
@@ -57,13 +58,13 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
       }
     } catch (err) {
       console.error("Error creating location:", err);
-      alert(`Backend connection failed to ${API_BASE}. Render server waking up or check internet.`);
+      alert(`Backend connection failed to ${API_BASE}.`);
     } finally {
       setLoadingAction(false);
     }
   };
 
-  // 2. Delete Location Handler
+  // 2. Handle Delete Location
   const handleDeleteLoc = async (id) => {
     if (!id) return;
     if (!window.confirm("Are you sure you want to delete this location?")) return;
@@ -89,7 +90,7 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
     }
   };
 
-  // 3. Create Notice Handler
+  // 3. Handle Create Notice
   const handleCreateNotice = async (e) => {
     e.preventDefault();
     setLoadingAction(true);
@@ -114,13 +115,13 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
       }
     } catch (err) {
       console.error("Error publishing notice:", err);
-      alert(`Backend connection failed to ${API_BASE}. Wait 30s if backend is waking up.`);
+      alert(`Backend connection failed to ${API_BASE}.`);
     } finally {
       setLoadingAction(false);
     }
   };
 
-  // 4. Delete Notice Handler
+  // 4. Handle Delete Notice
   const handleDeleteNotice = async (id) => {
     if (!id) return;
     if (!window.confirm("Are you sure you want to delete this notice?")) return;
@@ -311,16 +312,20 @@ export default function AdminPanel({ locations = [], notices = [], onRefresh }) 
               required
               className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500"
             />
+
+            {/* Block Dropdown with New Block */}
             <select
               value={newLoc.block}
               onChange={(e) => setNewLoc({ ...newLoc, block: e.target.value })}
               className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500"
             >
-              <option>Block A</option>
-              <option>Block B</option>
-              <option>Block C</option>
-              <option>Admin Block</option>
+              <option value="Block A">Block A</option>
+              <option value="Block B">Block B</option>
+              <option value="Block C">Block C</option>
+              <option value="New Block">New Block</option>
+              <option value="Admin Block">Admin Block</option>
             </select>
+
             <input
               type="text"
               placeholder="Floor Level (e.g. 2nd Floor)"
